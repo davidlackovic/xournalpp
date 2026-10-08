@@ -79,6 +79,12 @@ static bool xoppPathValidation(fs::path& p, const char*) {
     return true;
 }
 
+static bool pdfPathValidation(fs::path& p, const char*) {
+    Util::clearExtensions(p, ".pdf");
+    p += ".pdf";
+    return true;
+}
+
 void xoj::SaveExportDialog::showSaveFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
                                                std::function<void(std::optional<fs::path>)> callback) {
     auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Save File"),
@@ -86,6 +92,17 @@ void xoj::SaveExportDialog::showSaveFileDialog(GtkWindow* parent, Settings* sett
 
     auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
     xoj::addFilterXopp(fc);
+
+    popup.show(parent);
+}
+
+void xoj::SaveExportDialog::showSavePdfFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
+                                                  std::function<void(std::optional<fs::path>)> callback) {
+    auto popup = xoj::popup::PopupWindowWrapper<SaveExportDialog>(settings, std::move(suggestedPath), _("Save File"),
+                                                                  _("Save"), pdfPathValidation, std::move(callback));
+
+    auto* fc = GTK_FILE_CHOOSER(popup.getPopup()->getWindow());
+    xoj::addFilterPdf(fc);
 
     popup.show(parent);
 }

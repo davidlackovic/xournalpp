@@ -25,7 +25,7 @@
 #include "control/jobs/BaseExportJob.h"                          // for Base...
 #include "control/jobs/CustomExportJob.h"                        // for Cust...
 #include "control/jobs/PdfExportJob.h"                           // for PdfE...
-#include "control/jobs/SaveJob.h"                                // for SaveJob
+#include "control/jobs/PdfSaveJob.h"                             // for PdfSaveJob
 #include "control/jobs/Scheduler.h"                              // for JOB_...
 #include "control/jobs/XournalScheduler.h"                       // for Xour...
 #include "control/layer/LayerController.h"                       // for Laye...
@@ -1684,6 +1684,8 @@ bool Control::openPdfFile(fs::path filepath, bool attachToDocument, int scrollTo
     auto doc = std::make_unique<Document>(this);
     bool success = doc->readPdf(filepath, /*initPages=*/true, attachToDocument);
     if (success) {
+        // Saving always overwrites the opened PDF directly - no separate project filepath.
+        doc->setFilepath(filepath);
         this->replaceDocument(std::move(doc), scrollToPage);
     } else {
         std::string msg = FS(_F("Error reading PDF file \"{1}\"\n{2}") % filepath.u8string() % doc->getLastErrorMsg());
@@ -2132,7 +2134,13 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         // clear selection before saving
         ctrl->clearSelectionEndText();
 
-        auto* job = new SaveJob(ctrl, std::move(cb));
+        ctrl->doc->lock_shared();
+        fs::path target = ctrl->doc->getFilepath();
+        ctrl->doc->unlock_shared();
+        Util::clearExtensions(target, ".pdf");
+        target += ".pdf";
+
+        auto* job = new PdfSaveJob(ctrl, std::move(target), std::move(cb));
         ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
         job->unref();
     };
@@ -2142,18 +2150,20 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         this->doc->lock_shared();
         this->doc->setCreateBackupOnSave(false);
         auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
-        suggestedPath /= this->doc->createSaveFilename(Document::XOPP, this->settings->getDefaultSaveName());
+        suggestedPath /= this->doc->createSaveFilename(Document::PDF, this->settings->getDefaultSaveName(),
+                                                       this->settings->getDefaultPdfExportName());
         this->doc->unlock_shared();
-        xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings, std::move(suggestedPath),
-                                                  [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
-                                                      if (p && !p->empty()) {
-                                                          ctrl->settings->setLastSavePath(p->parent_path());
-                                                          ctrl->doc->lock();
-                                                          ctrl->doc->setFilepath(std::move(p.value()));
-                                                          ctrl->doc->unlock();
-                                                          doSave();
-                                                      }
-                                                  });
+        xoj::SaveExportDialog::showSavePdfFileDialog(
+                getGtkWindow(), settings, std::move(suggestedPath),
+                [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
+                    if (p && !p->empty()) {
+                        ctrl->settings->setLastSavePath(p->parent_path());
+                        ctrl->doc->lock();
+                        ctrl->doc->setFilepath(std::move(p.value()));
+                        ctrl->doc->unlock();
+                        doSave();
+                    }
+                });
     } else {
         doSave();
     }
