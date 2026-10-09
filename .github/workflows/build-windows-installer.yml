@@ -1,0 +1,11 @@
+name: Build Windows Installer (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows-installer:
+    uses: ./.github/workflows/create-installers.yml
+    with:
+      windows_builds: '[{"displayed_name":"Windows x86_64","runner":"windows-2022","msystem":"mingw64","msys_package_env":"x86_64","build_portable":"true"}]'
+      build_type: 'Release'
