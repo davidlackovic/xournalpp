@@ -49,12 +49,12 @@ private:
 
 void ToolHandler::initTools() {
     std::array<double, Tool::toolSizes> thickness;
-    // pen thicknesses = 0.18, 0.36, 0.6, 0.96, 2.4 mm (20% thicker than upstream default)
-    thickness[TOOL_SIZE_VERY_FINE] = 0.50;
-    thickness[TOOL_SIZE_FINE] = 1.02;
-    thickness[TOOL_SIZE_MEDIUM] = 1.69;
-    thickness[TOOL_SIZE_THICK] = 2.71;
-    thickness[TOOL_SIZE_VERY_THICK] = 6.80;
+    // pen thicknesses = 0.22, 0.43, 0.72, 1.15, 2.88 mm (44% thicker than upstream default)
+    thickness[TOOL_SIZE_VERY_FINE] = 0.60;
+    thickness[TOOL_SIZE_FINE] = 1.22;
+    thickness[TOOL_SIZE_MEDIUM] = 2.03;
+    thickness[TOOL_SIZE_THICK] = 3.25;
+    thickness[TOOL_SIZE_VERY_THICK] = 8.16;
     tools[TOOL_PEN - TOOL_PEN] = std::make_unique<Tool>("pen", TOOL_PEN, Colors::xopp_royalblue, thickness);
 
     thickness[TOOL_SIZE_VERY_FINE] = 1;
