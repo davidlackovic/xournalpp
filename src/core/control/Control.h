@@ -130,6 +130,18 @@ public:
     void saveAs(std::function<void(bool)> callback = [](bool) {});
 
     /**
+     * @brief Asynchronously flattens the document (all pages + annotations) into a PDF and writes it to disk,
+     * independently of the regular (.xopp) Save/Save As. Calls callback afterwards with boolean parameter true on
+     * success.
+     *
+     * The target path is remembered for the lifetime of the currently open document: if the document was opened
+     * directly from a PDF, it defaults to that PDF's own path (so the first call is silent); otherwise, the first
+     * call prompts a save dialog forced to a .pdf extension, and every later call on the same document reuses the
+     * chosen path silently.
+     */
+    void savePdf(std::function<void(bool)> callback = [](bool) {});
+
+    /**
      * Marks the current document as saved if it is currently marked as unsaved.
      */
     void resetSavedStatus();
@@ -533,6 +545,12 @@ private:
      */
     guint autosaveTimeout = 0;
     fs::path lastAutosaveFilename;
+
+    /**
+     * Remembered target path for the "Save as PDF" action, for the current open document session only.
+     * Separate from the document's own (.xopp) filepath. Reset whenever the open document is replaced.
+     */
+    std::optional<fs::path> pdfSavePath;
 
     XournalScheduler* scheduler;
 

@@ -10,6 +10,7 @@ constexpr const char* ACTION_NAMES[] = {  // Action to string conversion map
         "annotate-pdf",
         "save",
         "save-as",
+        "save-pdf",
         "export-as-pdf",
         "export-as",
         "print",

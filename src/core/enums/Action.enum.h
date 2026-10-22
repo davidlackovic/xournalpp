@@ -37,6 +37,7 @@ enum class Action : size_t {
     ANNOTATE_PDF,
     SAVE,
     SAVE_AS,
+    SAVE_PDF,
     EXPORT_AS_PDF,
     EXPORT_AS,
     PRINT,

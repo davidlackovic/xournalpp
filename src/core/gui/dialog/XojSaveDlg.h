@@ -33,6 +33,13 @@ public:
                                    std::function<void(std::optional<fs::path>)> callback);
 
     /**
+     * Shows a save file dialog, forcing a .pdf destination. The callback is called with std::nullopt if no path
+     * were selected
+     */
+    static void showSavePdfFileDialog(GtkWindow* parent, Settings* settings, fs::path suggestedPath,
+                                      std::function<void(std::optional<fs::path>)> callback);
+
+    /**
      * Creates a save or export file dialog. The callback is called with std::nullopt if no path were selected
      * @param pathValidation May modify the given path. Returns true if the path is (now) valid for saving/exporting.
      * @param callback(path)

@@ -108,6 +108,11 @@ struct ActionProperties<Action::SAVE_AS> {
 };
 
 template <>
+struct ActionProperties<Action::SAVE_PDF> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->savePdf(); }
+};
+
+template <>
 struct ActionProperties<Action::EXPORT_AS_PDF> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->exportAsPdf(); }
 };

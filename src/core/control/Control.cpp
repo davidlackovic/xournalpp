@@ -25,6 +25,7 @@
 #include "control/jobs/BaseExportJob.h"                          // for Base...
 #include "control/jobs/CustomExportJob.h"                        // for Cust...
 #include "control/jobs/PdfExportJob.h"                           // for PdfE...
+#include "control/jobs/PdfSaveJob.h"                             // for PdfSaveJob
 #include "control/jobs/SaveJob.h"                                // for SaveJob
 #include "control/jobs/Scheduler.h"                              // for JOB_...
 #include "control/jobs/XournalScheduler.h"                       // for Xour...
@@ -1552,6 +1553,9 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     *this->doc = *doc;  // This calls fireDocumentChanged(DOCUMENT_CHANGE_COMPLETE). No need to fire it again
     this->doc->unlock();
 
+    // New document session: forget any remembered "Save as PDF" target from the previous one.
+    this->pdfSavePath.reset();
+
     setEmergencyDocument(this->doc);
 
     // Set folder as last save path, so the next save will be at the current document location
@@ -1685,6 +1689,9 @@ bool Control::openPdfFile(fs::path filepath, bool attachToDocument, int scrollTo
     bool success = doc->readPdf(filepath, /*initPages=*/true, attachToDocument);
     if (success) {
         this->replaceDocument(std::move(doc), scrollToPage);
+        // The main use case for opening a PDF directly is annotating it: default the "Save as PDF"
+        // target to the opened PDF's own path, so the first "Save as PDF" writes back to it silently.
+        this->pdfSavePath = filepath;
     } else {
         std::string msg = FS(_F("Error reading PDF file \"{1}\"\n{2}") % filepath.u8string() % doc->getLastErrorMsg());
         XojMsgBox::showErrorToUser(this->getGtkWindow(), msg);
@@ -2154,6 +2161,40 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
                                                           doSave();
                                                       }
                                                   });
+    } else {
+        doSave();
+    }
+}
+
+void Control::savePdf(std::function<void(bool)> callback) {
+    // clear selection before saving
+    clearSelectionEndText();
+
+    auto doSave = [ctrl = this, cb = std::move(callback)]() {
+        ctrl->clearSelectionEndText();
+
+        auto* job = new PdfSaveJob(ctrl, *ctrl->pdfSavePath, std::move(cb));
+        ctrl->scheduler->addJob(job, JOB_PRIORITY_URGENT);
+        job->unref();
+    };
+
+    if (!this->pdfSavePath) {
+        // No remembered PDF export path yet for this document session: ask for one, forced to .pdf.
+        // This never touches the document's own (.xopp) filepath.
+        this->doc->lock_shared();
+        auto suggestedPath = this->doc->createSaveFoldername(this->settings->getLastSavePath());
+        suggestedPath /= this->doc->createSaveFilename(Document::PDF, this->settings->getDefaultSaveName(),
+                                                       this->settings->getDefaultPdfExportName());
+        this->doc->unlock_shared();
+        xoj::SaveExportDialog::showSavePdfFileDialog(
+                getGtkWindow(), settings, std::move(suggestedPath),
+                [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
+                    if (p && !p->empty()) {
+                        ctrl->settings->setLastSavePath(p->parent_path());
+                        ctrl->pdfSavePath = std::move(p);
+                        doSave();
+                    }
+                });
     } else {
         doSave();
     }

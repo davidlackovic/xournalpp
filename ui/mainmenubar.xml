@@ -32,6 +32,10 @@
      <attribute name="action">win.save-as</attribute>
      <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;s</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Save as PDF</attribute>
+     <attribute name="action">win.save-pdf</attribute>
+    </item>
    </section>
    <section>
     <item>
